@@ -26,7 +26,8 @@ class PublishService {
             blockchain: blockchain || this.userConfig.blockchain,
             maxNumberOfRetries: 30,
             frequency: 2,
-            contentType: 'all'
+            contentType: 'all',
+            nodeApiVersion: '/v1'
         });
         return this.dkgClient;
     }
@@ -89,18 +90,24 @@ class PublishService {
         }
     }
 
-    async internalPublishService(asset, edgeNodePublishMode, paranetUAL, wallet = null) {
+    async internalPublishService(
+        asset,
+        edgeNodePublishMode,
+        paranetUAL,
+        wallet = null
+    ) {
         switch (edgeNodePublishMode) {
-            case "public":
+            case 'public':
                 return await this.dkgClient.asset.create(asset, {
-                    epochsNum: 2
+                    epochsNum: 2,
+                    tokenAmount: '100000000000'
                 });
-            case "paranet":
+            case 'paranet':
                 return await this.dkgClient.asset.create(asset, {
                     epochsNum: 2,
                     paranetUAL: paranetUAL
                 });
-            case "curated_paranet":
+            case 'curated_paranet':
                 return await this.dkgClient.asset.localStore(asset, {
                     epochsNum: 2,
                     paranetUAL: paranetUAL
@@ -150,7 +157,7 @@ class PublishService {
             }
         );
 
-        return wallets.find((item) => item.wallet === result[0].wallet);
+        return wallets.find(item => item.wallet === result[0].wallet);
     }
 
     defineQueryBasedOnAvailableWallets(wallets) {
@@ -209,7 +216,10 @@ class PublishService {
     }
 
     defineStatus(localStoreStatus, submitToParanetStatus) {
-        if(localStoreStatus === OPERATION_STATUSES.COMPLETED && submitToParanetStatus) {
+        if (
+            localStoreStatus === OPERATION_STATUSES.COMPLETED &&
+            submitToParanetStatus
+        ) {
             return OPERATION_STATUSES.COMPLETED;
         } else {
             return OPERATION_STATUSES.FAILED;

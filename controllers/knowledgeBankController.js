@@ -21,18 +21,19 @@ exports.getDatasets = async (req, res) => {
 
 exports.getAssets = async (req, res) => {
     try {
-        const edgeNodePublishMode = req.user.config.find(
-            item => item.option === 'edge_node_publish_mode'
-        ).value || null;
-        const paranetUAL = req.user.config.find(
-            item => item.option === 'edge_node_paranet_ual'
-        ).value || null;
+        const edgeNodePublishMode =
+            req.user.config.find(
+                item => item.option === 'edge_node_publish_mode'
+            ).value || null;
+        const paranetUAL =
+            req.user.config.find(
+                item => item.option === 'edge_node_paranet_ual'
+            ).value || null;
 
         const offset = parseInt(req.query.offset) || 0;
         const limit = parseInt(req.query.limit) || 10;
 
-        if(edgeNodePublishMode === 'public') {
-
+        if (edgeNodePublishMode === 'public') {
             const { count, rows: assets } = await Asset.findAndCountAll({
                 attributes: [
                     'id',
@@ -41,12 +42,11 @@ exports.getAssets = async (req, res) => {
                     [Sequelize.col('created_at'), 'backend_synced_at']
                 ],
                 where: {
-                    publishing_status: "COMPLETED"
+                    publishing_status: 'COMPLETED'
                 },
                 limit: limit,
                 offset: offset
             });
-
 
             res.json({
                 totalItems: count,
@@ -113,7 +113,7 @@ exports.previewAssetExternal = async (req, res) => {
 
         const DkgClient = publishService.initDkgClient(blockchain);
         let result;
-        if(formattedUserConfig.edge_node_publish_mode === "public") {
+        if (formattedUserConfig.edge_node_publish_mode === 'public') {
             result = await DkgClient.asset.get(assetUAL);
         } else {
             result = await DkgClient.asset.get(assetUAL, {
@@ -288,11 +288,15 @@ exports.confirmAndCreateAssets = async (req, res) => {
                         wallet
                     );
                     console.timeEnd('Asset create');
-                    if ((result?.operation?.localStore && result?.operation?.publish) || (result?.operation?.localStore && result?.operation?.submitToParanet)) {
-
+                    if (
+                        result?.operation?.publish ||
+                        result?.operation?.submitToParanet
+                    ) {
                         const operationStatus = publishService.defineStatus(
-                            result.operation.localStore.status,
-                            (result?.operation?.publish) ? result.operation.publish.status : result.operation.submitToParanet.status
+                            result.operation.publish.status,
+                            result?.operation?.publish
+                                ? result.operation.publish.status
+                                : result.operation.submitToParanet.status
                         );
                         await publishService.updatePublishingStatus(
                             asset,
@@ -303,9 +307,11 @@ exports.confirmAndCreateAssets = async (req, res) => {
                         );
 
                         if (operationStatus === OPERATION_STATUSES.COMPLETED) {
-                            const vectorizationEnabled = req.user.config.find(
-                                item => item.option === 'vectorization_enabled'
-                            )?.value || null;
+                            const vectorizationEnabled =
+                                req.user.config.find(
+                                    item =>
+                                        item.option === 'vectorization_enabled'
+                                )?.value || null;
                             if (vectorizationEnabled === 'true') {
                                 await vectorService.vectorizeKnowledgeAsset(
                                     result,
@@ -325,7 +331,7 @@ exports.confirmAndCreateAssets = async (req, res) => {
                             'Something went wrong! Publish data is missing.',
                             wallet
                         );
-                        
+
                         return res.status(500).json({
                             error: 'An error occurred while creating the knowledge asset',
                             details: 'Failed to store the asset locally.'
@@ -341,7 +347,7 @@ exports.confirmAndCreateAssets = async (req, res) => {
                                     result?.operation?.mintKnowledgeAsset
                                         .transactionHash,
                                 status: publishService.defineStatus(
-                                    result.operation.localStore?.status,
+                                    result.operation.publish.status,
                                     result.operation.submitToParanet?.status
                                 )
                             }
