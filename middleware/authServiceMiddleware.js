@@ -2,40 +2,68 @@ const axios = require('axios');
 
 exports.authMiddleware = async (req, res, next) => {
     try {
-        // Extract the session cookie from the incoming request
-        const sessionCookie = req.headers.cookie;
+        const authHeader = req.headers['authorization'];
 
-        if (!sessionCookie) {
-            return res
-                .status(401)
-                .json({
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            // Bearer token is present
+            const token = authHeader.split(' ')[1];
+
+            if (!token) {
+                return res.status(401).json({
                     authenticated: false,
-                    message: 'No session cookie found'
+                    message: 'Invalid Bearer token format'
                 });
-        }
-
-        // Make a request to the Auth service to verify the session
-        const authResponse = await axios.get(
-            `${process.env.AUTH_SERVICE_ENDPOINT}/auth/check`,
-            {
-                headers: {
-                    Cookie: sessionCookie // Forward the session cookie to the Auth service
-                },
-                withCredentials: true // Include credentials in the request
             }
-        );
 
-        // Handle the Auth service response
-        if (authResponse.data.authenticated) {
-            req.user = authResponse.data.user; // Attach the user data to the request object
-            next(); // Continue to the next middleware or route handler
-        } else {
-            return res
-                .status(401)
-                .json({
+            const authResponse = await axios.get(
+                `${process.env.AUTH_SERVICE_ENDPOINT}/auth/check`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    },
+                    withCredentials: true
+                }
+            );
+
+            if (authResponse.data.authenticated) {
+                req.user = authResponse.data.user;
+                return next();
+            } else {
+                return res.status(401).json({
                     authenticated: false,
                     message: 'User not authenticated'
                 });
+            }
+        } else {
+            // Bearer token not present, check for session cookie
+            const sessionCookie = req.headers.cookie;
+
+            if (!sessionCookie) {
+                return res.status(401).json({
+                    authenticated: false,
+                    message: 'No session cookie found'
+                });
+            }
+
+            const authResponse = await axios.get(
+                `${process.env.AUTH_SERVICE_ENDPOINT}/auth/check`,
+                {
+                    headers: {
+                        Cookie: sessionCookie
+                    },
+                    withCredentials: true
+                }
+            );
+
+            if (authResponse.data.authenticated) {
+                req.user = authResponse.data.user;
+                next();
+            } else {
+                return res.status(401).json({
+                    authenticated: false,
+                    message: 'User not authenticated'
+                });
+            }
         }
     } catch (error) {
         console.error('Error during authentication:', error);

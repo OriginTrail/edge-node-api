@@ -129,16 +129,44 @@ class PublishService {
     }
 
     async getWallets(sessionCookie) {
-        const wallets = await axios.get(
-            `${process.env.AUTH_SERVICE_ENDPOINT}/auth/wallets`,
-            {
-                headers: {
-                    Cookie: sessionCookie
-                },
-                withCredentials: true
+        try {
+            const authHeader = req.headers['authorization'];
+
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                // Bearer token is present
+                const token = authHeader.split(' ')[1];
+
+                if (!token) {
+                    throw Error('Invalid token format');
+                }
+
+                const wallets = await axios.get(
+                    `${process.env.AUTH_SERVICE_ENDPOINT}/auth/wallets`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        },
+                        withCredentials: true
+                    }
+                );
+                return wallets.data.wallets;
+            } else {
+                const sessionCookie = req.headers.cookie;
+
+                const wallets = await axios.get(
+                    `${process.env.AUTH_SERVICE_ENDPOINT}/auth/wallets`,
+                    {
+                        headers: {
+                            Cookie: sessionCookie
+                        },
+                        withCredentials: true
+                    }
+                );
+                return wallets.data.wallets;
             }
-        );
-        return wallets.data.wallets;
+        } catch (e) {
+            return null;
+        }
     }
 
     async defineNextWallet(wallets) {
