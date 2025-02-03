@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 // const { createAssetJob } = require('./queue');
-require('./sync-assets-queue');
+//require('./sync-assets-queue');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();

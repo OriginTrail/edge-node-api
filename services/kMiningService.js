@@ -3,20 +3,19 @@ const FormData = require('form-data');
 const fs = require('fs');
 const datasetService = require('./datasetService.js');
 
-exports.defineProcessingPipelineId = async (req) => {
+exports.defineProcessingPipelineId = async req => {
     const kmining_json_pipeline_id = req.user.config.find(
-        (item) => item.option === 'kmining_json_pipeline_id'
+        item => item.option === 'kmining_json_pipeline_id'
     )?.value;
     const kmining_pdf_pipeline_id = req.user.config.find(
-        (item) => item.option === 'kmining_pdf_pipeline_id'
+        item => item.option === 'kmining_pdf_pipeline_id'
     )?.value;
     const kmining_csv_pipeline_id = req.user.config.find(
-        (item) => item.option === 'kmining_csv_pipeline_id'
+        item => item.option === 'kmining_csv_pipeline_id'
     )?.value;
 
-
     if (req.file.mimetype === 'application/ld+json') {
-        return "simple_json_to_jsonld";
+        return 'simple_json_to_jsonld';
     }
     if (req.file.mimetype === 'application/json') {
         return kmining_json_pipeline_id;
@@ -44,8 +43,8 @@ exports.triggerPipeline = async (
         formData.append('pipelineId', kMiningPipelineId);
         formData.append(
             'fileFormat',
-            file.mimetype === 'application/json'
-            || file.mimetype === 'application/ld+json'
+            file.mimetype === 'application/json' ||
+                file.mimetype === 'application/ld+json'
                 ? 'json'
                 : file.mimetype === 'application/pdf'
                 ? 'pdf'
@@ -53,7 +52,7 @@ exports.triggerPipeline = async (
         );
 
         let result = await axios.post(
-            `${kMiningEndpoint}/trigger_pipeline`,
+            `${kMiningEndpoint}/trigger-pipeline`,
             formData,
             {
                 withCredentials: true,
@@ -64,9 +63,10 @@ exports.triggerPipeline = async (
             }
         );
 
-        if (result.data.message === 'DAG triggered') {
-            const pipelineId = result.data.pipeline_id;
-            const runId = result.data.run_id;
+        console.log('Trigger pipeline result', result.status, result.data);
+        if (result.data.success) {
+            const pipelineId = result.data.pipelineId;
+            const runId = result.data.runId;
             if (inputDatasetDBRecord) {
                 await datasetService.storePipelineInfo(
                     inputDatasetDBRecord,
@@ -77,18 +77,26 @@ exports.triggerPipeline = async (
             while (true) {
                 await wait(1000);
 
+                console.log('Checking pipeline status...');
                 let pipelineResp = await axios.get(
                     `${kMiningEndpoint}/check-pipeline-status`,
                     {
                         params: {
-                            pipeline_id: pipelineId,
-                            run_id: runId
+                            pipelineId,
+                            runId
+                        },
+                        withCredentials: true,
+                        headers: {
+                            Cookie: sessionCookie,
+                            ...formData.getHeaders() // Include multipart/form-data headers
                         }
                     }
                 );
 
+                console.log('Pipeline status result', pipelineResp.data);
+
                 if (pipelineResp.data.status === 'success') {
-                    return pipelineResp.data.xcom_value;
+                    return pipelineResp.data.result;
                 } else if (
                     pipelineResp.data.status === 'failed' ||
                     pipelineResp.data.status === 'not_found'
@@ -104,7 +112,12 @@ exports.triggerPipeline = async (
         throw error;
     }
 };
-
 function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    console.log(`Waiting for ${ms}ms`);
+    return new Promise(resolve => {
+        setTimeout(() => {
+            console.log('Finished waiting');
+            resolve();
+        }, 1000);
+    });
 }
