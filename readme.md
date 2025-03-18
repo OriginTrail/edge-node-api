@@ -22,8 +22,8 @@
 
 ## Dependencies
 1. **Edge node Knowledge mining** - app is being used for input file processing and creating Knowledge asset content
-2. **Edge node Authentication service** - app is being used as middleware for every API request to Edge node backend - session/cookie is being validated. Also, app contains all important Edge node config params like Knowledge mining endpoint, DRAG endpoint, KMining pipeline id etc
+2. **Edge node Authentication service** - app is being used as middleware for every API request to Edge node API - session/cookie is being validated. Also, app contains all important Edge node config params like Knowledge mining endpoint, DRAG endpoint, KMining pipeline id etc
 
 App will be exposed on http://localhost:3002
 
-***NOTE***: All Edge node backend settings parameters are set in Edge node auth service app DB and this app will not work if Auth service is not running and properly set.
+***NOTE***: All Edge node API settings parameters are set in Edge node auth service app DB and this app will not work if Auth service is not running and properly set.
