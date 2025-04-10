@@ -1,4 +1,5 @@
 const { Queue, Worker, QueueScheduler } = require('bullmq');
+const { BullMQOtel } = require('bullmq-otel');
 const redis = require('ioredis');
 const publishService = require('./services/publishService.js');
 require('./queue-metrics');
@@ -18,7 +19,10 @@ const queues = {};
 async function createAssetJob(wallet, assetContent) {
     if (!queues[wallet]) {
         // Initialize queue for the wallet
-        queues[wallet] = new Queue(`wallet-jobs-${wallet}`, { connection });
+        queues[wallet] = new Queue(`wallet-jobs-${wallet}`, {
+            connection,
+            telemetry: new BullMQOtel('queue')
+        });
 
         // Create a worker for this wallet's queue
         new Worker(
@@ -27,7 +31,7 @@ async function createAssetJob(wallet, assetContent) {
                 const { wallet } = job.data;
                 await createKnowledgeAsset(wallet, assetContent);
             },
-            { connection, concurrency: 1 } // Ensure one job per wallet at a time
+            { connection, concurrency: 1, telemetry: new BullMQOtel('queue') } // Ensure one job per wallet at a time
         );
     }
 

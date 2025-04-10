@@ -27,3 +27,12 @@
 App will be exposed on http://localhost:3002
 
 ***NOTE***: All Edge node backend settings parameters are set in Edge node auth service app DB and this app will not work if Auth service is not running and properly set.
+
+## OpenTelemetry
+
+This service comes with OpenTelemetry support pre-installed. To enable it, set `OTEL_ENABLED=true` in .env variables.
+
+OpenTelemetry is implemented using [@opentelemetry/auto-instrumentations-node](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node) package, and can be further configured using env variables.
+- Configuration: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
+- Set up exporters: https://opentelemetry.io/docs/specs/otel/protocol/exporter/
+- Exporters + dashboard docker setup: https://hub.docker.com/r/grafana/otel-lgtm 
