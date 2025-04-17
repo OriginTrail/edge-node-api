@@ -426,9 +426,17 @@ class PublishService {
             } else {
                 const sessionCookie = req.headers.cookie;
 
+                const userAgent = req.headers['user-agent']?.toLowerCase();
+                const isBrowser =
+                    userAgent &&
+                    !userAgent.includes('postman') &&
+                    !userAgent.includes('node');
                 const wallets = await axios.get(
                     `${process.env.AUTH_SERVICE_ENDPOINT}/wallets`,
                     {
+                        params: {
+                            browser_only: isBrowser
+                        },
                         headers: {
                             Cookie: sessionCookie
                         },
