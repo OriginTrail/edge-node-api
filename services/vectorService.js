@@ -54,6 +54,7 @@ class VectorService {
             ).value;
 
             const embeddingsAndMetadata = await kMiningService.triggerPipeline(
+                req,
                 { path: filePath },
                 sessionCookie,
                 kMiningEndpoint,

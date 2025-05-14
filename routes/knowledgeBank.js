@@ -46,6 +46,17 @@ router.post(
     knowledgeBankController.confirmAndCreateAssets
 );
 router.post(
+    '/assets/create/async',
+    authServiceMiddleware.authMiddleware,
+    uploadDataset.single('file'),
+    knowledgeBankController.importCreateAsync
+);
+router.get(
+    '/assets/status/:datasetId',
+    authServiceMiddleware.authMiddleware,
+    knowledgeBankController.getDatasetStatus
+);
+router.post(
     '/query',
     authServiceMiddleware.authMiddleware,
     knowledgeBankController.query

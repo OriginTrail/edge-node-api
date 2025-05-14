@@ -1,34 +1,39 @@
 {
-  "name": "edge-node-backend",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "@zilliz/milvus2-sdk-node": "^2.4.9",
-    "axios": "^1.7.4",
-    "bullmq": "^5.13.2",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "crypto": "^1.0.1",
-    "dkg.js": "8.0.0-alpha.2",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "form-data": "^4.0.0",
-    "ioredis": "^5.4.1",
-    "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.11.0",
-    "sequelize": "^6.37.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.4",
-    "sequelize-cli": "^6.6.2"
-  }
+    "name": "edge-node-backend",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "start": "node app.js",
+        "dev": "nodemon app.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "@bull-board/express": "^6.9.1",
+        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/auto-instrumentations-node": "^0.57.1",
+        "@zilliz/milvus2-sdk-node": "^2.4.9",
+        "axios": "^1.7.4",
+        "bullmq": "^5.13.2",
+        "bullmq-otel": "^1.0.1",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "crypto": "^1.0.1",
+        "dkg-evm-module": "^8.0.0",
+        "dkg.js": "^8.0.11",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "form-data": "^4.0.0",
+        "ioredis": "^5.4.1",
+        "multer": "^1.4.5-lts.1",
+        "mysql2": "^3.11.0",
+        "sequelize": "^6.37.3"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.4",
+        "sequelize-cli": "^6.6.2"
+    }
 }

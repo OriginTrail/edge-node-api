@@ -17,13 +17,22 @@
       4. GRANT ALL PRIVILEGES ON*.*TO'username'@'%'WITH GRANT OPTION;
       5. FLUSH PRIVILEGES;
       6. update Edge node API .env with mysql connection details
-6. make sure redis is running on it's default port 6379
+6. make sure redis is running as configured in .env (default: 127.0.0.1:6379)
 7. npm run start
 
 ## Dependencies
 1. **Edge node Knowledge mining** - app is being used for input file processing and creating Knowledge asset content
-2. **Edge node Authentication service** - app is being used as middleware for every API request to Edge node backend - session/cookie is being validated. Also, app contains all important Edge node config params like Knowledge mining endpoint, DRAG endpoint, KMining pipeline id etc
+2. **Edge node Authentication service** - app is being used as middleware for every API request to Edge node API - session/cookie is being validated. Also, app contains all important Edge node config params like Knowledge mining endpoint, DRAG endpoint, KMining pipeline id etc
 
 App will be exposed on http://localhost:3002
 
-***NOTE***: All Edge node backend settings parameters are set in Edge node auth service app DB and this app will not work if Auth service is not running and properly set.
+***NOTE***: All Edge node API settings parameters are set in Edge node auth service app DB and this app will not work if Auth service is not running and properly set.
+
+## OpenTelemetry
+
+This service comes with OpenTelemetry support pre-installed. To enable it, set `OTEL_ENABLED=true` in .env variables.
+
+OpenTelemetry is implemented using [@opentelemetry/auto-instrumentations-node](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node) package, and can be further configured using env variables.
+- Configuration: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
+- Set up exporters: https://opentelemetry.io/docs/specs/otel/protocol/exporter/
+- Exporters + dashboard docker setup: https://hub.docker.com/r/grafana/otel-lgtm 

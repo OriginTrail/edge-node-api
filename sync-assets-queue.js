@@ -3,45 +3,60 @@ const { QueryTypes } = require('sequelize');
 const sequelize = require('sequelize');
 const { SyncedAsset, Notification } = require('./models');
 const { Queue, Worker } = require('bullmq');
+const { BullMQOtel } = require('bullmq-otel');
 const redis = require('ioredis');
 const axios = require('axios');
 const connection = new redis({
+    port: process.env.REDIS_PORT,
+    host: process.env.REDIS_HOST,
+    username: process.env.REDIS_USERNAME,
+    password: process.env.REDIS_PASSWORD,
+    db: process.env.REDIS_DB,
     maxRetriesPerRequest: null
 });
 
-const mockWait = (ms) => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+const mockWait = ms => {
+    return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-const syncQueue = new Queue('syncQueue', { connection });
+const syncQueue = new Queue('syncQueue', {
+    connection,
+    telemetry: new BullMQOtel('sync-assets-queue')
+});
 
 new Worker(
     'syncQueue',
-    async (job) => {
+    async job => {
         console.log(`Starting sync job...Time: ${job.data.timestamp}`);
-        console.log(`Checking Edge node publish mode...Time: ${job.data.timestamp}`);
+        console.log(
+            `Checking Edge node publish mode...Time: ${job.data.timestamp}`
+        );
 
         const publicConfig = await axios.get(
-            `${process.env.AUTH_SERVICE_ENDPOINT}/auth/params/public`
+            `${process.env.AUTH_SERVICE_ENDPOINT}/params/public`
         );
-        const edgeNodePublishMode = publicConfig.data.config.find(
-            item => item.option === 'edge_node_publish_mode'
-        ).value || null;
+        const edgeNodePublishMode =
+            publicConfig.data.config.find(
+                item => item.option === 'edge_node_publish_mode'
+            ).value || null;
 
-        if(edgeNodePublishMode === "public") {
-            console.log(`Edge node publish mode is public, aborting sync operation...Time: ${job.data.timestamp}`);
+        if (edgeNodePublishMode === 'public') {
+            console.log(
+                `Edge node publish mode is public, aborting sync operation...Time: ${job.data.timestamp}`
+            );
             return;
         }
 
-        const paranetUAL = publicConfig.data.config.find(
-            item => item.option === 'edge_node_paranet_ual'
-        ).value || null;
+        const paranetUAL =
+            publicConfig.data.config.find(
+                item => item.option === 'edge_node_paranet_ual'
+            ).value || null;
 
         try {
             const internalSyncedAssets = await SyncedAsset.findAll({
                 where: {
-                    paranet_ual: paranetUAL,
-                },
+                    paranet_ual: paranetUAL
+                }
             });
             if (internalSyncedAssets.length === 0) {
                 console.log(`First time query...`);
@@ -58,14 +73,18 @@ new Worker(
             } else if (internalSyncedAssets.length > 0) {
                 const lastSyncedAsset = await SyncedAsset.findOne({
                     where: {
-                        paranet_ual: paranetUAL,
+                        paranet_ual: paranetUAL
                     },
                     order: [['id', 'DESC']]
                 });
                 const date = new Date(lastSyncedAsset.backend_synced_at);
-            const utcDateString = date.toISOString().replace('Z', '').replace('T', ' ').slice(0, 19);
-            const assets = await externalSequelize.query(getNextQuery(utcDateString, paranetUAL)
-                    ,
+                const utcDateString = date
+                    .toISOString()
+                    .replace('Z', '')
+                    .replace('T', ' ')
+                    .slice(0, 19);
+                const assets = await externalSequelize.query(
+                    getNextQuery(utcDateString, paranetUAL),
                     {
                         type: QueryTypes.SELECT
                     }
@@ -82,11 +101,12 @@ new Worker(
     },
     {
         connection,
-        concurrency: 1 // Ensure only one job runs at a time
+        concurrency: 1, // Ensure only one job runs at a time
+        telemetry: new BullMQOtel('sync-assets-queue')
     }
 );
 
-const getInitialQuery = (paranetUAL) => {
+const getInitialQuery = paranetUAL => {
     return `
         SELECT sa.*
         FROM paranet_synced_asset sa

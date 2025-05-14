@@ -4,17 +4,22 @@ const fs = require('fs');
 const datasetService = require('./datasetService.js');
 
 exports.defineProcessingPipelineId = async req => {
+exports.defineProcessingPipelineId = async req => {
     const kmining_json_pipeline_id = req.user.config.find(
+        item => item.option === 'kmining_json_pipeline_id'
         item => item.option === 'kmining_json_pipeline_id'
     )?.value;
     const kmining_pdf_pipeline_id = req.user.config.find(
         item => item.option === 'kmining_pdf_pipeline_id'
+        item => item.option === 'kmining_pdf_pipeline_id'
     )?.value;
     const kmining_csv_pipeline_id = req.user.config.find(
+        item => item.option === 'kmining_csv_pipeline_id'
         item => item.option === 'kmining_csv_pipeline_id'
     )?.value;
 
     if (req.file.mimetype === 'application/ld+json') {
+        return 'simple_json_to_jsonld';
         return 'simple_json_to_jsonld';
     }
     if (req.file.mimetype === 'application/json') {
@@ -28,7 +33,27 @@ exports.defineProcessingPipelineId = async req => {
     }
 };
 
+async function inferMimeType(filePath) {
+    const f = await fs.promises.open(filePath);
+    const peek = Buffer.alloc(256);
+    await f.read(peek, 0, 256);
+    f.close();
+    if (peek.indexOf('{') === 0 || peek.indexOf('[') === 0) {
+        return peek.includes('"@context"') || peek.includes('"@type"')
+            ? 'application/ld+json'
+            : 'application/json';
+    }
+    if (peek.indexOf('%PDF') === 0) {
+        return 'application/pdf';
+    }
+    if (peek.includes(',')) {
+        return 'text/csv';
+    }
+    return 'text/plain';
+}
+
 exports.triggerPipeline = async (
+    req,
     file,
     sessionCookie,
     kMiningEndpoint,
@@ -39,10 +64,21 @@ exports.triggerPipeline = async (
         // Create form data
         const formData = new FormData();
         const filePath = file.path;
+
+        if (
+            !file.mimetype ||
+            file.mimetype === 'text/plain' ||
+            file.mimetype === 'application/json'
+        ) {
+            file.mimetype = await inferMimeType(filePath);
+        }
+
         formData.append('file', fs.createReadStream(filePath));
         formData.append('pipelineId', kMiningPipelineId);
         formData.append(
             'fileFormat',
+            file.mimetype === 'application/json' ||
+                file.mimetype === 'application/ld+json'
             file.mimetype === 'application/json' ||
                 file.mimetype === 'application/ld+json'
                 ? 'json'
@@ -51,17 +87,43 @@ exports.triggerPipeline = async (
                 : 'csv'
         );
 
-        let result = await axios.post(
-            `${kMiningEndpoint}/trigger-pipeline`,
-            formData,
-            {
-                withCredentials: true,
-                headers: {
-                    Cookie: sessionCookie,
-                    ...formData.getHeaders() // Include multipart/form-data headers
-                }
+        let result = null;
+
+        const authHeader = req.headers['authorization'];
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            // Bearer token is present
+            const token = authHeader.split(' ')[1];
+
+            if (!token) {
+                throw Error('Invalid Bearer token format');
             }
-        );
+
+            result = await axios.post(
+                `${kMiningEndpoint}/trigger_pipeline`,
+                formData,
+                {
+                    withCredentials: true,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        ...formData.getHeaders() // Include multipart/form-data headers
+                    }
+                }
+            );
+        } else {
+            const sessionCookie = req.headers.cookie;
+            result = await axios.post(
+                `${kMiningEndpoint}/trigger-pipeline`,
+                formData,
+                {
+                    withCredentials: true,
+                    headers: {
+                        Cookie: sessionCookie,
+                        ...formData.getHeaders() // Include multipart/form-data headers
+                    }
+                }
+            );
+        }
 
         console.log('Trigger pipeline result', result.status, result.data);
         if (result.data.success) {
@@ -113,11 +175,5 @@ exports.triggerPipeline = async (
     }
 };
 function wait(ms) {
-    console.log(`Waiting for ${ms}ms`);
-    return new Promise(resolve => {
-        setTimeout(() => {
-            console.log('Finished waiting');
-            resolve();
-        }, 1000);
-    });
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
