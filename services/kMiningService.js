@@ -93,7 +93,7 @@ exports.triggerPipeline = async (
             }
 
             result = await axios.post(
-                `${kMiningEndpoint}/trigger_pipeline`,
+                `${kMiningEndpoint}/trigger-pipeline`,
                 formData,
                 {
                     withCredentials: true,
@@ -106,7 +106,7 @@ exports.triggerPipeline = async (
         } else {
             const sessionCookie = req.headers.cookie;
             result = await axios.post(
-                `${kMiningEndpoint}/trigger_pipeline`,
+                `${kMiningEndpoint}/trigger-pipeline`,
                 formData,
                 {
                     withCredentials: true,
@@ -118,9 +118,10 @@ exports.triggerPipeline = async (
             );
         }
 
-        if (result.data.message === 'DAG triggered') {
-            const pipelineId = result.data.pipeline_id;
-            const runId = result.data.run_id;
+        console.log('Trigger pipeline result', result.status, result.data);
+        if (result.data.success) {
+            const pipelineId = result.data.pipelineId;
+            const runId = result.data.runId;
             if (inputDatasetDBRecord) {
                 await datasetService.storePipelineInfo(
                     inputDatasetDBRecord,
@@ -131,18 +132,26 @@ exports.triggerPipeline = async (
             while (true) {
                 await wait(1000);
 
+                console.log('Checking pipeline status...');
                 let pipelineResp = await axios.get(
                     `${kMiningEndpoint}/check-pipeline-status`,
                     {
                         params: {
-                            pipeline_id: pipelineId,
-                            run_id: runId
+                            pipelineId,
+                            runId
+                        },
+                        withCredentials: true,
+                        headers: {
+                            Cookie: sessionCookie,
+                            ...formData.getHeaders() // Include multipart/form-data headers
                         }
                     }
                 );
 
+                console.log('Pipeline status result', pipelineResp.data);
+
                 if (pipelineResp.data.status === 'success') {
-                    return pipelineResp.data.xcom_value;
+                    return pipelineResp.data.result;
                 } else if (
                     pipelineResp.data.status === 'failed' ||
                     pipelineResp.data.status === 'not_found'
@@ -158,7 +167,6 @@ exports.triggerPipeline = async (
         throw error;
     }
 };
-
 function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
