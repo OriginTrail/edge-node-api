@@ -4,22 +4,17 @@ const fs = require('fs');
 const datasetService = require('./datasetService.js');
 
 exports.defineProcessingPipelineId = async req => {
-exports.defineProcessingPipelineId = async req => {
     const kmining_json_pipeline_id = req.user.config.find(
-        item => item.option === 'kmining_json_pipeline_id'
         item => item.option === 'kmining_json_pipeline_id'
     )?.value;
     const kmining_pdf_pipeline_id = req.user.config.find(
         item => item.option === 'kmining_pdf_pipeline_id'
-        item => item.option === 'kmining_pdf_pipeline_id'
     )?.value;
     const kmining_csv_pipeline_id = req.user.config.find(
-        item => item.option === 'kmining_csv_pipeline_id'
         item => item.option === 'kmining_csv_pipeline_id'
     )?.value;
 
     if (req.file.mimetype === 'application/ld+json') {
-        return 'simple_json_to_jsonld';
         return 'simple_json_to_jsonld';
     }
     if (req.file.mimetype === 'application/json') {
@@ -79,8 +74,6 @@ exports.triggerPipeline = async (
             'fileFormat',
             file.mimetype === 'application/json' ||
                 file.mimetype === 'application/ld+json'
-            file.mimetype === 'application/json' ||
-                file.mimetype === 'application/ld+json'
                 ? 'json'
                 : file.mimetype === 'application/pdf'
                 ? 'pdf'
@@ -100,7 +93,7 @@ exports.triggerPipeline = async (
             }
 
             result = await axios.post(
-                `${kMiningEndpoint}/trigger_pipeline`,
+                `${kMiningEndpoint}/trigger-pipeline`,
                 formData,
                 {
                     withCredentials: true,
